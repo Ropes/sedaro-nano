@@ -1,0 +1,55 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+skinparam ArrowColor        Black
+skinparam ArrowFontColor    Black
+skinparam NodeFontColor     Black
+skinparam BoundaryFontColor Black
+
+title ipynb Sedaro Nano data flow
+scale 2
+
+participant caller [
+    =CALLER
+    ---
+    ""User""
+]
+participant ui [
+    =Web
+    ---
+    ""Plotly UI""
+]
+participant sim [
+    =Simulator
+    ---
+    ""Jupyter Notebook""
+]
+collections IV as init
+collections QRangeStore as qrs
+hnote over qrs: Stores DiffEqu vector state per body and timestep.
+entity data.js as data
+
+caller -> sim : exec simulation
+activate sim
+qrs <- init : Load gravitational bodies from IV
+
+loop 500 times
+    loop for each agentId body
+        sim -> sim : load timestep per agent body
+        sim -> qrs : read(timestep)
+        sim <- qrs : universe{state}
+        sim -> sim : propagate() body vectors iff bodies match IV bodies
+        note right:  sometimes only one body is returned from the read(time)
+    end
+end
+
+sim->data : write JSON upon completion
+deactivate sim
+
+ui <- data : load JSON data.js
+ui->caller : rendered image of simulated bodies
+
+@enduml
