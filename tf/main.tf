@@ -12,7 +12,7 @@ resource "kubernetes_namespace" "sedaro" {
 resource "kubernetes_service_v1" "dask-scheduler" {
   metadata {
     name = "dask-scheduler"
-    namespace = kubernetes_namespace.sedaro.metadata.0.name
+    namespace = "sedaro"
   }
   spec {
     selector = {
@@ -36,40 +36,35 @@ resource "kubernetes_deployment_v1" "dask-scheduler" {
       name = "dask-scheduler"
     }
   }
+
   spec {
     replicas = 1
+
     selector = {
       match_labels = {
         app = "dask-scheduler"
       }
     }
-    container {
-      name = "scheduler"
-      image = "ghcr.io/dask/dask:2023.8.1"
-      port {
-        name = "scheduler-api"
-        port = 8786
-        target_port = 8786
-      }
-      port {
-        name = "scheduler-dashboard"
-        port = 8787
-        target_port = 8787
-      }
-      requests = {
-        cpu    = "250m"
-        memory = "50Mi"
-      }
-    }
-    liveness_probe {
-      http_get {
-        path = "/status"
-        port = 8786
-      }
 
-      initial_delay_seconds = 10
-      period_seconds        = 3
+    template {
+      spec {
+        container {
+          name = "scheduler"
+          image = "ghcr.io/dask/dask:2023.8.1"
+          port {
+            name = "scheduler-api"
+            container_port = 8786
+            protocol = "TCP"
+          }
+          port {
+            name = "scheduler-dashboard"
+            container_port = 8787
+            protocol = "TCP"
+          }
+        }
+      }
     }
   }
+
 }
 
