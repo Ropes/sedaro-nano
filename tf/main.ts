@@ -5,23 +5,47 @@ import { App, Token, TerraformStack } from "cdktf";
  * See https://cdk.tf/provider-generation for more details.
  */
 import { DeploymentV1 } from "./.gen/providers/kubernetes/deployment-v1";
-import { Namespace } from "./.gen/providers/kubernetes/namespace";
 import { KubernetesProvider } from "./.gen/providers/kubernetes/provider";
 import { ServiceV1 } from "./.gen/providers/kubernetes/service-v1";
+import { NamespaceV1 } from "@cdktf/provider-kubernetes/lib/namespace-v1";
 
 class MyConvertedCode extends Construct {
+  constructor(scope: Construct, name: string) {
+    super(scope, name);
+
+
+  }
+}
+
+const conf = {
+  metadata: "sedaro",
+  namespace: "sedaro",
+};
+//new MyConvertedCode(app, "tf", conf);
+
+class SedaroStack extends TerraformStack {
   constructor(scope: Construct, name: string) {
     super(scope, name);
     new KubernetesProvider(this, "kubernetes", {
       configContext: "minikube",
       configPath: "~/.kube/config.minikube",
     });
-    new DeploymentV1(this, "dask-scheduler", {
+    const ns = "sedaro";
+
+    new NamespaceV1(this, "sedaro-ns", {
+      metadata: {
+        name: ns,
+      },
+    });
+
+
+    new DeploymentV1(this, "deploy-dask-scheduler", {
       metadata: {
         labels: {
           app: "dask-scheduler",
         },
-        name: "dask-scheduler"
+        name: "dask-scheduler",
+        namespace: ns,
       },
       spec: {
         replicas: Token.asString(1),
@@ -54,61 +78,182 @@ class MyConvertedCode extends Construct {
                     protocol: "TCP",
                   },
                 ],
+                resources: {
+                  limits: {
+                    cpu: "0.5",
+                    memory: "512Mi",
+                  },
+                  requests: {
+                    cpu: "250m",
+                    memory: "50Mi",
+                  },
+                },
               },
             ],
           },
         },
       },
     });
-    new Namespace(this, "sedaro", {
+
+    new DeploymentV1(this, "deploy-dask-workers", {
       metadata: {
-        name: "sedaro",
+        labels: {
+          app: "dask-workers",
+        },
+        name: "dask-workers",
+        namespace: ns,
+      },
+      spec: {
+        replicas: Token.asString(3),
+        selector: {
+          matchLabels: {
+            app: "dask-workers",
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: "dask-workers",
+            },
+            name: "dask-workers"
+          },
+          spec: {
+            container: [
+              {
+                image: "ghcr.io/dask/dask:2023.8.1",
+                name: "worker",
+                port: [
+                  {
+                    name: "worker-dash",
+                    containerPort: 8787,
+                    protocol: "TCP",
+                  },
+                ],
+                resources: {
+                  limits: {
+                    cpu: "1",
+                    memory: "1024Mi",
+                  },
+                  requests: {
+                    cpu: "250m",
+                    memory: "50Mi",
+                  },
+                },
+              },
+            ],
+          },
+        },
       },
     });
-    const kubernetesServiceV1DaskScheduler = new ServiceV1(
-      this,
-      "dask-scheduler_3",
+
+    new ServiceV1(this, "dask-scheduler-svc", {
+      metadata: {
+        name: "dask-scheduler",
+        namespace: ns,
+      },
+      spec: {
+        port: [
+          {
+            name: "dask-scheduler-api",
+            port: 8786,
+            protocol: "TCP",
+          },
+          {
+            name: "dask-scheduler-dash",
+            port: 8787,
+            protocol: "TCP",
+          },
+        ],
+        selector: {
+          app: "dask-scheduler",
+        },
+      },
+    }
+    );
+
+    new ServiceV1(this, "redis-svc",
       {
         metadata: {
-          name: "dask-scheduler",
-          namespace: "sedaro",
+          labels: {
+            service: "redis",
+          },
+          namespace: ns,
+          name: "redis",
         },
+
         spec: {
           port: [
             {
-              port: 8786,
-              protocol: "TCP",
-            },
-            {
-              port: 8787,
+              name: "redis-port",
+              port: 6379,
               protocol: "TCP",
             },
           ],
           selector: {
-            app: "dask-scheduler",
-          },
+            service: "redis",
+          }
         },
       }
     );
-    /*This allows the Terraform resource name to match the original name. You can remove the call if you don't need them to match.*/
-    kubernetesServiceV1DaskScheduler.overrideLogicalId("dask-scheduler");
-  }
-}
 
-const conf = { metadata: "sedaro" };
-//new MyConvertedCode(app, "tf", conf);
+    new DeploymentV1(this, "deploy-redis", {
+      metadata: {
+        name: "redis",
+        labels: {
+          service: "redis"
+        },
+        namespace: ns,
+      },
+      spec: {
+        replicas: Token.asString(1),
+        selector: {
+          matchLabels: {
+            service: "redis",
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              service: "redis",
+            },
+            name: "redis"
+          },
+          spec: {
+            container: [
+              {
+                image: "redis:7",
+                name: "redis",
+                port: [
+                  {
+                    name: "redis-service",
+                    containerPort: 6379,
+                    protocol: "TCP",
+                  },
+                ],
+                resources: {
+                  limits: {
+                    cpu: "1",
+                    memory: "1024Mi",
+                  },
+                  requests: {
+                    cpu: "250m",
+                    memory: "50Mi",
+                  },
+                },
+              }
+            ]
+          }
 
-class SedaroStack extends TerraformStack {
-  constructor(scope: Construct, name: string) {
-    super(scope, name);
-    //const cluster = new Cluster(this, "cluster");
-    //const webservice = new Webservice(this, "webservice");
-    //cluster.addService(webservice);
+        },
+
+      },
+    });
 
     //const conf = { metadata: "sedaro" };
     new MyConvertedCode(this, "tf");
   }
 }
+
 
 const app = new App();
 new SedaroStack(app, conf.metadata)
