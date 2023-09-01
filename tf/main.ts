@@ -12,8 +12,6 @@ import { NamespaceV1 } from "@cdktf/provider-kubernetes/lib/namespace-v1";
 class MyConvertedCode extends Construct {
   constructor(scope: Construct, name: string) {
     super(scope, name);
-
-
   }
 }
 
@@ -66,6 +64,7 @@ class SedaroStack extends TerraformStack {
               {
                 image: "ghcr.io/dask/dask:2023.8.1",
                 name: "scheduler",
+                command: ["dask", "scheduler"],
                 port: [
                   {
                     containerPort: 8786,
@@ -122,6 +121,7 @@ class SedaroStack extends TerraformStack {
               {
                 image: "ghcr.io/dask/dask:2023.8.1",
                 name: "worker",
+                command: ["dask", "worker", "dask-scheduler:8786"],
                 port: [
                   {
                     name: "worker-dash",
@@ -168,8 +168,78 @@ class SedaroStack extends TerraformStack {
           app: "dask-scheduler",
         },
       },
-    }
-    );
+    });
+
+    new ServiceV1(this, "dask-notebook-svc", {
+      metadata: {
+        name: "dask-notebook",
+        namespace: ns,
+      },
+      spec: {
+        type: "NodePort",
+        port: [
+          {
+            name: "dask-notebook",
+            port: 8888,
+            protocol: "TCP",
+          },
+        ],
+        selector: {
+          service: "dask-notebook",
+        },
+      },
+    });
+
+    new DeploymentV1(this, "deploy-dask-notebook", {
+      metadata: {
+        name: "dask-notebook",
+        labels: {
+          service: "dask-notebook"
+        },
+        namespace: ns,
+      },
+      spec: {
+        replicas: Token.asString(1),
+        selector: {
+          matchLabels: {
+            service: "dask-notebook",
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              service: "dask-notebook",
+            },
+            name: "dask-notebook"
+          },
+          spec: {
+            container: [
+              {
+                image: "ghcr.io/dask/dask-notebook:2023.8.1",
+                name: "dask-notebook",
+                port: [
+                  {
+                    name: "dask-notebook",
+                    containerPort: 8888,
+                    protocol: "TCP",
+                  },
+                ],
+                resources: {
+                  limits: {
+                    cpu: "1",
+                    memory: "1024Mi",
+                  },
+                  requests: {
+                    cpu: "250m",
+                    memory: "50Mi",
+                  },
+                },
+              }
+            ]
+          }
+        },
+      },
+    });
 
     new ServiceV1(this, "redis-svc",
       {

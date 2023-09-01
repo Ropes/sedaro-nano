@@ -11,3 +11,6 @@ synth:
 
 deploy: synth
 	cdktf deploy --skip-synth --auto-approve sedaro
+
+dask-notebook:
+	minikube service dask-notebook -n sedaro --url
