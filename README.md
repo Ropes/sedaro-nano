@@ -137,8 +137,8 @@ Ideally all envs run identical Python environments. [Efficiency made by using pu
   * [ ] `minikube` forward local docker registry 
 * [x] Dask invoked from Flask service frontend: `porta`
   * [x] EnvVars to configure: `DASK_SCHEDULER={minikube-addr}:{minikube-nodeport} REDIS_ADDR= flask --app porta run`
-  * [ ] Invoke dask-scheduler to distribute propagation tasks to workers, collect results.
-  * [ ] Cache results in Redis for 
+  * [x] Invoke dask-scheduler to distribute propagation tasks to workers, collect results.
+  * [x] Cache results in Redis for quick subsequent querying
 
 **Bookmark point**
 * [ ] (started) Dockerfile to build flask app image
