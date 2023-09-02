@@ -247,6 +247,7 @@ class SedaroStack extends TerraformStack {
         },
 
         spec: {
+          type: "NodePort",
           port: [
             {
               name: "redis-port",

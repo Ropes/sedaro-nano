@@ -13,12 +13,22 @@ from flask import Flask, render_template
 # Remove 1st argument from the
 # list of command line arguments
 daskAddr = os.getenv('DASK_SCHEDULER')
-redisAddr = os.getenv('REDIS_ADDR') 
+redisAddr = os.getenv('REDIS') 
+
+if daskAddr == "" or redisAddr == "":
+   print("DASK_SCHEDULER and REDIS_ADDR envvars must not be empty")
+   os.exit(1)
+
+# TODO: error handling would be best
+rArr = redisAddr.split(":")
+if len(rArr) != 2:
+   print("REDIS_ADDR must contain URI and Port separated by ':'")
+   os.exit(2)
 
 # Initialize Dask and Redis clients
 client = Client(daskAddr)
 client.upload_file('nano.py')
-r = redis.Redis(host=redisAddr, port=6379, decode_responses=True)
+r = redis.Redis(host=rArr[0], port=rArr[1], decode_responses=True)
 
 
 app = Flask(__name__)
