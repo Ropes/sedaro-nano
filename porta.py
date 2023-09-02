@@ -8,7 +8,7 @@ import redis
 
 import dask
 from dask.distributed import Client
-from flask import Flask
+from flask import Flask, render_template
  
 # Remove 1st argument from the
 # list of command line arguments
@@ -31,15 +31,18 @@ def hello_world():
 @app.route('/propagate/<int:n>')
 def prop_route(n):
   # Lookup Redis for data
-  data = r.hgetall('propagated[{n}]')
-  if data:
+  json_data = r.get(f'propagated[{n}]')
+  if json_data:
+    data = json.loads(json_data) 
     # render html page and return
-    print('data returned: {data}')
-    return '<p>propagation</p>'
+    #print(f'cache data returned: {data}')
+    return render_template('index.html', data=data)
 
   # If no data, propagate(n)
   store = propagate_reps(client, n)
-  d = f"data = {json.dumps(store.store, indent=3)}"
+  d = json.dumps(store.store)
   # store data to Redis
-  r.hset('propagated[{n}]', key='propagated[{n}]', value=d)
-  return '<p>launched propagation!</p>'
+  r.set(f'propagated[{n}]', d)
+
+  # return template
+  return render_template('index.html', data=d)

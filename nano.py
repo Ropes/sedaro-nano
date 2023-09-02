@@ -104,7 +104,6 @@ def propagate_reps(client, n):
 
 
   for _ in range(n): # timestep
-    print(store.store)
     pt = times[PlanetKey]
     st = times[SatKey]
     pu = read(store, pt-0.001)
