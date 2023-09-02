@@ -319,6 +319,29 @@ class SedaroStack extends TerraformStack {
       },
     });
 
+    // TODO: Deployment for flask frontend "porta"
+
+    // TODO: porta-Service LoadBalancer
+    new ServiceV1(this, "porta-svc", {
+      metadata: {
+        name: "porta-service",
+        namespace: ns,
+      },
+      spec: {
+        type: "NodePort",
+        port: [
+          {
+            name: "porta",
+            port: 8080,
+            protocol: "TCP",
+          },
+        ],
+        selector: {
+          app: "porta",
+        },
+      },
+    });
+
     //const conf = { metadata: "sedaro" };
     new MyConvertedCode(this, "tf");
   }
