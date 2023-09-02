@@ -9,7 +9,8 @@
 
   <body>
     <div id="plot" style="position: fixed; width: 100%; height: 100%; left: 0; top: 0;""></div>
-    <script src="data.js"></script>
+    <!--script src="data.js"></script-->
+    <script>var data = {{ data|tojson }};</script>
     <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
     <script>
       console.log("data:", data);
