@@ -12,6 +12,9 @@ It was quite the learning and humbling experience getting all these systems(Terr
 
 Document process of analysis, time constrained development process, and final bookmarked functionality.
 
+![](./sim_ipynb_analysis.png)
+(analysis of the original DiffEqu Propagation algorithm and html display)
+
 Implement Kubernetes deployment of sedaro-nano supporting services utilizing CDKTF(Typescript).
 
 Utilize Dask distributed processing to parallelize propagation calculation. Ideally share and forward necessary state(QRangeStore data + previous timesteps) to propagation calculations, then reduce calculated state to inform downstream calculation.
