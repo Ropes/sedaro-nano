@@ -1,10 +1,8 @@
 
-.PHONY: main.ts synth deploy
+.PHONY: main.ts synth deploy dask-notebook-url dask-scheduler-url
 
-convert: main.ts
-
-main.ts:
-	cat main.tf | cdktf convert > main.ts
+start:
+	minikube start
 
 synth:
 	cdktf synth
@@ -12,5 +10,8 @@ synth:
 deploy: synth
 	cdktf deploy --skip-synth --auto-approve sedaro
 
-dask-notebook:
+dask-notebook-url:
 	minikube service dask-notebook -n sedaro --url
+
+dask-scheduler-url:
+	minikube service dask-scheduler -n sedaro --url

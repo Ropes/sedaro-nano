@@ -9,17 +9,11 @@ import { KubernetesProvider } from "./.gen/providers/kubernetes/provider";
 import { ServiceV1 } from "./.gen/providers/kubernetes/service-v1";
 import { NamespaceV1 } from "@cdktf/provider-kubernetes/lib/namespace-v1";
 
-class MyConvertedCode extends Construct {
-  constructor(scope: Construct, name: string) {
-    super(scope, name);
-  }
-}
 
 const conf = {
   metadata: "sedaro",
   namespace: "sedaro",
 };
-//new MyConvertedCode(app, "tf", conf);
 
 class SedaroStack extends TerraformStack {
   constructor(scope: Construct, name: string) {
@@ -103,7 +97,7 @@ class SedaroStack extends TerraformStack {
         namespace: ns,
       },
       spec: {
-        replicas: Token.asString(3),
+        replicas: Token.asString(5),
         selector: {
           matchLabels: {
             app: "dask-workers",
@@ -152,6 +146,7 @@ class SedaroStack extends TerraformStack {
         namespace: ns,
       },
       spec: {
+        type: "NodePort",
         port: [
           {
             name: "dask-scheduler-api",
@@ -322,28 +317,25 @@ class SedaroStack extends TerraformStack {
     // TODO: Deployment for flask frontend "porta"
 
     // TODO: porta-Service LoadBalancer
-    new ServiceV1(this, "porta-svc", {
-      metadata: {
-        name: "porta-service",
-        namespace: ns,
-      },
-      spec: {
-        type: "NodePort",
-        port: [
-          {
-            name: "porta",
-            port: 8080,
-            protocol: "TCP",
-          },
-        ],
-        selector: {
-          app: "porta",
-        },
-      },
-    });
-
-    //const conf = { metadata: "sedaro" };
-    new MyConvertedCode(this, "tf");
+    //new ServiceV1(this, "porta-svc", {
+    //  metadata: {
+    //    name: "porta-service",
+    //    namespace: ns,
+    //  },
+    //  spec: {
+    //    type: "NodePort",
+    //    port: [
+    //      {
+    //        name: "porta",
+    //        port: 8080,
+    //        protocol: "TCP",
+    //      },
+    //    ],
+    //    selector: {
+    //      app: "porta",
+    //    },
+    //  },
+    //});
   }
 }
 
